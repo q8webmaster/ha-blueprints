@@ -24,6 +24,9 @@ house down — or closing them to keep the cool air trapped inside.
 - **Optional Alexa announcement** — also speak the recommendation on Echo
   devices via the built-in Alexa Devices integration, toggled independently
   of the phone notification.
+- **Alexa quiet hours** — restrict the Alexa announcement to a time window
+  (e.g. 08:00–22:00) so it doesn't speak overnight. Phone notifications are
+  unaffected.
 
 ## Requirements
 
@@ -67,6 +70,9 @@ integration needed.
 2. In the blueprint's **Alexa Announcements** section, enable
    "Enable Alexa Announcement" and select the notify entity/entities to
    announce on.
+3. Set **Earliest Announcement Time** / **Latest Announcement Time**
+   (defaults to 08:00–22:00) to keep Alexa quiet outside those hours. The
+   phone notification still fires immediately regardless of this window.
 
 ## How it works
 

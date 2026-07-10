@@ -3,7 +3,7 @@ blueprint:
   description: >
     # 🌡️ Window Advisor
 
-    **Version: 1.1.1**
+    **Version: 1.2.0**
 
 
     Compares your indoor and outdoor temperature sensors and sends a mobile
@@ -40,6 +40,11 @@ blueprint:
         [Alexa Devices](https://www.home-assistant.io/integrations/alexa_devices/)
         integration, which exposes an "Announce" notify entity per Echo
         device (e.g. `notify.echo_dot_kitchen_announce`).
+
+      - **Alexa Quiet Hours:** Restricts the Alexa announcement to a time
+        window (e.g. 08:00–22:00) so it never speaks in your house early
+        morning or late night. Only affects the Alexa announcement — the
+        phone notification is unaffected and still fires immediately.
 
     </details>
 
@@ -168,6 +173,18 @@ blueprint:
               multiple: true
               filter:
                 domain: notify
+        alexa_quiet_hours_start:
+          name: Earliest Announcement Time
+          description: Alexa won't announce before this time. Phone notifications aren't affected.
+          default: "08:00:00"
+          selector:
+            time:
+        alexa_quiet_hours_end:
+          name: Latest Announcement Time
+          description: Alexa won't announce after this time. Phone notifications aren't affected.
+          default: "22:00:00"
+          selector:
+            time:
 
 mode: single
 max_exceeded: silent
@@ -214,6 +231,8 @@ actions:
       last_decision_helper: !input last_decision_helper
       alexa_announce_enabled: !input enable_alexa_announce
       alexa_notify_entities: !input alexa_notify_entities
+      alexa_quiet_hours_start: !input alexa_quiet_hours_start
+      alexa_quiet_hours_end: !input alexa_quiet_hours_end
   - condition: template
     value_template: "{{ not (trigger.id == 'periodic_check' and not periodic_recheck_enabled) }}"
   - variables:
@@ -256,6 +275,9 @@ actions:
   - if:
       - condition: template
         value_template: "{{ alexa_announce_enabled and alexa_notify_entities | count > 0 }}"
+      - condition: time
+        after: !input alexa_quiet_hours_start
+        before: !input alexa_quiet_hours_end
     then:
       - action: notify.send_message
         target:
