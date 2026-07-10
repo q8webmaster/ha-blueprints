@@ -7,7 +7,7 @@ A collection of Home Assistant automation blueprints by
 
 | Blueprint | Description |
 |---|---|
-| [🌡️ Window Advisor](blueprints/automation/window_advisor.md) | Compares indoor/outdoor temperature sensors and notifies you when to open or close your windows. |
+| [🌡️ Window Advisor](blueprints/automation/window_advisor/README.md) | Compares indoor/outdoor temperature sensors and notifies you when to open or close your windows. |
 
 ## Installing a blueprint
 

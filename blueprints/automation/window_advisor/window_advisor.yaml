@@ -50,7 +50,7 @@ blueprint:
 
     Required = *
   domain: automation
-  source_url: https://github.com/q8webmaster/ha-blueprints/blob/main/blueprints/automation/window_advisor.yaml
+  source_url: https://github.com/q8webmaster/ha-blueprints/blob/main/blueprints/automation/window_advisor/window_advisor.yaml
   input:
     sensors:
       name: "Temperature Sensors *"
