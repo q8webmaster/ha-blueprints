@@ -120,13 +120,21 @@ blueprint:
         periodic_interval_minutes:
           name: Periodic Recheck Interval
           description: How often to re-evaluate when Periodic Recheck is enabled. Ignored otherwise.
-          default: 15
+          default: "/15"
           selector:
-            number:
-              min: 5
-              max: 180
-              unit_of_measurement: minutes
-              mode: box
+            select:
+              mode: dropdown
+              options:
+                - label: Every 5 minutes
+                  value: "/5"
+                - label: Every 10 minutes
+                  value: "/10"
+                - label: Every 15 minutes
+                  value: "/15"
+                - label: Every 30 minutes
+                  value: "/30"
+                - label: Every hour
+                  value: "/60"
 
 mode: single
 max_exceeded: silent
@@ -134,7 +142,6 @@ max_exceeded: silent
 trigger_variables:
   outdoor_sensors: !input outdoor_sensors
   indoor_sensors: !input indoor_sensors
-  periodic_interval_minutes: !input periodic_interval_minutes
 
 triggers:
   - trigger: template
@@ -163,7 +170,7 @@ triggers:
       minutes: !input debounce_minutes
   - trigger: time_pattern
     id: periodic_check
-    minutes: "/{{ periodic_interval_minutes }}"
+    minutes: !input periodic_interval_minutes
 
 actions:
   - variables:
