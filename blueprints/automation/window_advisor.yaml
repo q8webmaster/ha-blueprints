@@ -1,0 +1,218 @@
+blueprint:
+  name: "🌡️ Window Advisor"
+  description: >
+    # 🌡️ Window Advisor
+
+    **Version: 1.0.0**
+
+
+    Compares your indoor and outdoor temperature sensors and sends a mobile
+    notification telling you when it's worth opening the windows to cool the
+    house down, or closing them to keep the cool air trapped inside.
+
+
+    <details>
+    <summary><b>How it works</b> 👈</summary>
+
+
+      - **Comparison:** The highest reading among your outdoor sensors is
+        compared against the lowest reading among your indoor sensors.
+        - Outdoor max < Indoor min → **Open the windows**
+        - Outdoor max > Indoor min → **Close the windows**
+
+      - **Debounce:** Each comparison must hold steady for the configured
+        **Debounce** time before a notification fires, to avoid noise from
+        momentary sensor fluctuations.
+
+      - **Periodic Recheck (optional):** In addition to reacting to sensor
+        changes, the automation can re-evaluate on a fixed interval as a
+        safety net — useful if a sensor occasionally misses reporting a
+        change. It only notifies if the recommendation actually changed
+        since the last notification, so it never repeats the same alert.
+
+      - **Duplicate Guard:** An `input_text` helper you provide stores the
+        last recommendation that was sent, preventing repeat notifications
+        for an unchanged state.
+
+    </details>
+
+
+    **Requirements:**
+
+    - One or more outdoor temperature sensors (`device_class: temperature`)
+
+    - One or more indoor temperature sensors (`device_class: temperature`)
+
+    - The [Home Assistant Companion App](https://companion.home-assistant.io/) on the devices you want notified
+
+    - An `input_text` helper (Settings → Devices & Services → Helpers → + Create Helper → Text) to track the last notification sent
+
+
+    Required = *
+  domain: automation
+  source_url: https://github.com/q8webmaster/ha-blueprints/blob/main/blueprints/automation/window_advisor.yaml
+  input:
+    sensors:
+      name: "Temperature Sensors *"
+      icon: mdi:thermometer
+      collapsed: false
+      input:
+        outdoor_sensors:
+          name: Outdoor Sensors *
+          description: The highest current reading among these is used as the outdoor temperature.
+          selector:
+            entity:
+              multiple: true
+              filter:
+                device_class: temperature
+        indoor_sensors:
+          name: Indoor Sensors *
+          description: The lowest current reading among these is used as the indoor temperature.
+          selector:
+            entity:
+              multiple: true
+              filter:
+                device_class: temperature
+    notifications:
+      name: "Notifications *"
+      icon: mdi:cellphone-message
+      collapsed: false
+      input:
+        notify_devices:
+          name: Devices to Notify *
+          description: One or more mobile devices running the Home Assistant Companion App.
+          selector:
+            device:
+              integration: mobile_app
+              multiple: true
+        last_decision_helper:
+          name: Last Decision Helper *
+          description: >
+            An `input_text` helper used to remember the last recommendation
+            sent, so periodic rechecks don't repeat the same notification.
+            Create one under Settings → Devices & Services → Helpers → Text,
+            then select it here.
+          selector:
+            entity:
+              filter:
+                domain: input_text
+    timing:
+      name: Timing
+      icon: mdi:timer-outline
+      collapsed: true
+      input:
+        debounce_minutes:
+          name: Debounce
+          description: How long the comparison must hold steady before notifying.
+          default: 5
+          selector:
+            number:
+              min: 1
+              max: 60
+              unit_of_measurement: minutes
+              mode: box
+        enable_periodic_check:
+          name: Enable Periodic Recheck
+          description: Also re-evaluate on a fixed interval, not just on sensor changes.
+          default: true
+          selector:
+            boolean:
+        periodic_interval_minutes:
+          name: Periodic Recheck Interval
+          description: How often to re-evaluate when Periodic Recheck is enabled. Ignored otherwise.
+          default: 15
+          selector:
+            number:
+              min: 5
+              max: 180
+              unit_of_measurement: minutes
+              mode: box
+
+mode: single
+max_exceeded: silent
+
+trigger_variables:
+  outdoor_sensors: !input outdoor_sensors
+  indoor_sensors: !input indoor_sensors
+  periodic_interval_minutes: !input periodic_interval_minutes
+
+triggers:
+  - trigger: template
+    id: open_needed
+    value_template: >
+      {% set out = expand(outdoor_sensors) | map(attribute='state') | map('float', none) | reject('none') | list %}
+      {% set inn = expand(indoor_sensors) | map(attribute='state') | map('float', none) | reject('none') | list %}
+      {% if out | length > 0 and inn | length > 0 %}
+        {{ out | max < inn | min }}
+      {% else %}
+        false
+      {% endif %}
+    for:
+      minutes: !input debounce_minutes
+  - trigger: template
+    id: close_needed
+    value_template: >
+      {% set out = expand(outdoor_sensors) | map(attribute='state') | map('float', none) | reject('none') | list %}
+      {% set inn = expand(indoor_sensors) | map(attribute='state') | map('float', none) | reject('none') | list %}
+      {% if out | length > 0 and inn | length > 0 %}
+        {{ out | max > inn | min }}
+      {% else %}
+        false
+      {% endif %}
+    for:
+      minutes: !input debounce_minutes
+  - trigger: time_pattern
+    id: periodic_check
+    minutes: "/{{ periodic_interval_minutes }}"
+
+actions:
+  - variables:
+      periodic_recheck_enabled: !input enable_periodic_check
+      outdoor_sensors: !input outdoor_sensors
+      indoor_sensors: !input indoor_sensors
+      notify_devices_raw: !input notify_devices
+      last_decision_helper: !input last_decision_helper
+  - condition: template
+    value_template: "{{ not (trigger.id == 'periodic_check' and not periodic_recheck_enabled) }}"
+  - variables:
+      outdoor_max: >
+        {% set vals = expand(outdoor_sensors) | map(attribute='state') | map('float', none) | reject('none') | list %}
+        {{ vals | max | round(1) if vals | length > 0 else '?' }}
+      indoor_min: >
+        {% set vals = expand(indoor_sensors) | map(attribute='state') | map('float', none) | reject('none') | list %}
+        {{ vals | min | round(1) if vals | length > 0 else '?' }}
+      notify_devices_list: "{{ notify_devices_raw if notify_devices_raw is list else [notify_devices_raw] }}"
+      trigger_id: "{{ trigger.id | default('') }}"
+  - variables:
+      decision: >
+        {% if trigger_id in ['open_needed', 'close_needed'] %}
+          {{ 'open' if trigger_id == 'open_needed' else 'close' }}
+        {% else %}
+          {% set out = expand(outdoor_sensors) | map(attribute='state') | map('float', none) | reject('none') | list %}
+          {% set inn = expand(indoor_sensors) | map(attribute='state') | map('float', none) | reject('none') | list %}
+          {% if out | length > 0 and inn | length > 0 and out | max < inn | min %}
+            open
+          {% else %}
+            close
+          {% endif %}
+        {% endif %}
+  - condition: template
+    value_template: "{{ decision | trim != states(last_decision_helper) }}"
+  - variables:
+      device_ids: "{{ notify_devices_list | select('string') | unique | list }}"
+      notification_title: >
+        {% if decision | trim == 'open' %}🪟 Open the windows!{% else %}🪟 Close the windows!{% endif %}
+      notification_message: >
+        {% if decision | trim == 'open' %}It's cooler outside (max {{ outdoor_max }}°C) than inside (min {{ indoor_min }}°C). Time to ventilate!{% else %}It's warmer outside (max {{ outdoor_max }}°C) than inside (min {{ indoor_min }}°C). Close up to keep the cool air in!{% endif %}
+  - repeat:
+      for_each: "{{ device_ids }}"
+      sequence:
+        - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+          data:
+            title: "{{ notification_title }}"
+            message: "{{ notification_message }}"
+  - action: input_text.set_value
+    target:
+      entity_id: "{{ last_decision_helper }}"
+    data:
+      value: "{{ decision | trim }}"
