@@ -21,6 +21,9 @@ house down — or closing them to keep the cool air trapped inside.
   actually changed since the last notification sent.
 - **Multi-device notifications** — notify any number of Companion App
   devices in one automation.
+- **Optional Alexa announcement** — also speak the recommendation on Echo
+  devices via the Alexa Media Player custom integration, toggled
+  independently of the phone notification.
 
 ## Requirements
 
@@ -49,6 +52,19 @@ house down — or closing them to keep the cool air trapped inside.
    - The `input_text` helper you created in step 1
    - Debounce time and periodic recheck settings (optional, sensible
      defaults provided)
+   - Alexa Announcements (optional, see below)
+
+### Optional: Alexa announcements
+
+The official Home Assistant Alexa integration only exposes entities *to*
+Alexa for voice control — it cannot push announcements *to* Echo devices.
+To have an Echo Dot speak the recommendation:
+
+1. Install the [Alexa Media Player](https://github.com/alandtse/alexa_media_player)
+   custom integration via HACS and log in with your Amazon account.
+2. Your Echo devices will appear as `media_player` entities.
+3. In the blueprint's **Alexa Announcements** section, enable
+   "Enable Alexa Announcement" and select the Echo device(s) to announce on.
 
 ## How it works
 

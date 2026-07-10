@@ -3,7 +3,7 @@ blueprint:
   description: >
     # 🌡️ Window Advisor
 
-    **Version: 1.0.0**
+    **Version: 1.1.0**
 
 
     Compares your indoor and outdoor temperature sensors and sends a mobile
@@ -33,6 +33,14 @@ blueprint:
       - **Duplicate Guard:** An `input_text` helper you provide stores the
         last recommendation that was sent, preventing repeat notifications
         for an unchanged state.
+
+      - **Alexa Announcement (optional):** Also speaks the recommendation on
+        selected Echo devices, using the same duplicate guard so it stays in
+        sync with the phone notification. Requires the
+        [Alexa Media Player](https://github.com/alandtse/alexa_media_player)
+        custom integration (HACS) — the official Home Assistant Alexa
+        integration only exposes entities *to* Alexa for voice control and
+        cannot push announcements *to* Echo devices.
 
     </details>
 
@@ -135,6 +143,31 @@ blueprint:
                   value: "/30"
                 - label: Every hour
                   value: "/60"
+    alexa:
+      name: Alexa Announcements
+      icon: mdi:amazon-alexa
+      collapsed: true
+      input:
+        enable_alexa_announce:
+          name: Enable Alexa Announcement
+          description: >
+            Also announce the recommendation on the selected Echo devices
+            below. Requires the Alexa Media Player custom integration
+            (HACS) — the official Alexa integration cannot do this.
+          default: false
+          selector:
+            boolean:
+        alexa_media_players:
+          name: Echo Devices to Announce On
+          description: >
+            Media player entities exposed by the Alexa Media Player
+            integration. Ignored if Enable Alexa Announcement is off.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                domain: media_player
 
 mode: single
 max_exceeded: silent
@@ -179,6 +212,8 @@ actions:
       indoor_sensors: !input indoor_sensors
       notify_devices_raw: !input notify_devices
       last_decision_helper: !input last_decision_helper
+      alexa_announce_enabled: !input enable_alexa_announce
+      alexa_media_players: !input alexa_media_players
   - condition: template
     value_template: "{{ not (trigger.id == 'periodic_check' and not periodic_recheck_enabled) }}"
   - variables:
@@ -218,6 +253,16 @@ actions:
           data:
             title: "{{ notification_title }}"
             message: "{{ notification_message }}"
+  - if:
+      - condition: template
+        value_template: "{{ alexa_announce_enabled and alexa_media_players | count > 0 }}"
+    then:
+      - action: notify.alexa_media
+        data:
+          target: "{{ alexa_media_players }}"
+          message: "{{ notification_message }}"
+          data:
+            type: announce
   - action: input_text.set_value
     target:
       entity_id: "{{ last_decision_helper }}"
