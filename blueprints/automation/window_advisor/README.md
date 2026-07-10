@@ -61,3 +61,12 @@ The comparison is evaluated both on sensor state changes (debounced) and,
 optionally, on a fixed interval. Either path only sends a notification when
 the recommendation differs from the last one sent, so you get a single
 timely alert per state change rather than repeated nagging.
+
+## Credits
+
+Originally inspired by [smndhm/ha-blueprint-heatwave-windows](https://github.com/smndhm/ha-blueprint-heatwave-windows)
+("Fenêtres Canicule / Heatwave Windows"), also MIT licensed. This version
+renames the trigger/variable structure, replaces the fixed debounce-only
+triggering with an optional periodic recheck plus duplicate-notification
+guard, drops the French localization, and rewrites the input layout and
+notification copy.
