@@ -30,6 +30,9 @@ house down — or closing them to keep the cool air trapped inside.
 - **Customizable messages** — override the title/message text for both the
   open and close recommendation (used for both the phone notification and
   the Alexa announcement), with today's wording as the default.
+- **One-tap test reset** — an optional button entity that clears the
+  duplicate guard without sending a notification, so testing doesn't
+  require waiting for the recommendation to actually change.
 
 ## Requirements
 
@@ -37,28 +40,37 @@ house down — or closing them to keep the cool air trapped inside.
 - One or more indoor temperature sensors (`device_class: temperature`)
 - The [Home Assistant Companion App](https://companion.home-assistant.io/)
   installed on the device(s) you want notified
-- An `input_text` helper to track the last notification sent (see setup
-  below)
+- An `input_text` helper named exactly `input_text.window_advisor_last_decision`
+  to track the last notification sent (see setup below)
 
 ## Setup
 
 1. **Create the helper.** Go to **Settings → Devices & Services → Helpers →
-   + Create Helper → Text**. Name it something like `Window Advisor Last
-   Decision`. You'll select this helper in the blueprint's Notifications
-   section.
-2. **Import the blueprint** using the button above, or manually via
+   + Create Helper → Text**. Set its name so the resulting entity ID is
+   exactly `input_text.window_advisor_last_decision` — the blueprint uses
+   this fixed entity ID internally rather than a picker, so it must match.
+2. **(Optional) Create a reset button.** Settings → Devices & Services →
+   Helpers → + Create Helper → **Button**. You'll select this in the
+   blueprint's Notifications section; pressing it in the future clears the
+   duplicate guard for testing, without sending a notification.
+3. **Import the blueprint** using the button above, or manually via
    **Settings → Automations & Scenes → Blueprints → Import Blueprint** and
    paste this URL:
    ```
    https://github.com/q8webmaster/ha-blueprints/blob/main/blueprints/automation/window_advisor/window_advisor.yaml
    ```
-3. **Create an automation** from the blueprint and fill in:
+4. **Create an automation** from the blueprint and fill in:
    - Outdoor and indoor temperature sensors
    - Devices to notify
-   - The `input_text` helper you created in step 1
+   - The reset button from step 2 (optional)
    - Debounce time and periodic recheck settings (optional, sensible
      defaults provided)
    - Alexa Announcements (optional, see below)
+
+> **Note:** the fixed helper entity ID means each automation created from
+> this blueprint shares the same duplicate guard. If you ever create a
+> second instance (e.g. for a different room), both instances would
+> interfere with each other's dedupe state.
 
 ### Optional: Alexa announcements
 
