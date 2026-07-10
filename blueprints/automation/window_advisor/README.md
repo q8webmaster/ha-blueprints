@@ -27,6 +27,9 @@ house down — or closing them to keep the cool air trapped inside.
 - **Alexa quiet hours** — restrict the Alexa announcement to a time window
   (e.g. 08:00–22:00) so it doesn't speak overnight. Phone notifications are
   unaffected.
+- **Customizable messages** — override the title/message text for both the
+  open and close recommendation (used for both the phone notification and
+  the Alexa announcement), with today's wording as the default.
 
 ## Requirements
 
@@ -73,6 +76,14 @@ integration needed.
 3. Set **Earliest Announcement Time** / **Latest Announcement Time**
    (defaults to 08:00–22:00) to keep Alexa quiet outside those hours. The
    phone notification still fires immediately regardless of this window.
+
+### Optional: Customize the notification text
+
+In the **Notifications** section, the four template fields (Open/Close
+Title, Open/Close Message) control what's shown on your phone and spoken
+by Alexa. They default to the built-in wording, and support Jinja — two
+variables are available: `{{ outdoor_max }}` and `{{ indoor_min }}` (both
+°C, already rounded to 1 decimal).
 
 ## How it works
 

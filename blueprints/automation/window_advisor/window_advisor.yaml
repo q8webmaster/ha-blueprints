@@ -3,7 +3,7 @@ blueprint:
   description: >
     # 🌡️ Window Advisor
 
-    **Version: 1.2.0**
+    **Version: 1.3.0**
 
 
     Compares your indoor and outdoor temperature sensors and sends a mobile
@@ -108,6 +108,42 @@ blueprint:
             entity:
               filter:
                 domain: input_text
+        open_title_template:
+          name: Open Notification Title
+          description: Shown on the phone notification when windows should be opened. Supports templates.
+          default: "🪟 Windows: open them up"
+          selector:
+            template:
+        open_message_template:
+          name: Open Notification Message
+          description: >
+            Shown on the phone and spoken by Alexa when windows should be
+            opened. Supports templates — {{ outdoor_max }} and
+            {{ indoor_min }} are available (°C, already rounded).
+          default: >-
+            Outdoor peak is {{ outdoor_max }}°C, below your coolest indoor
+            reading of {{ indoor_min }}°C. Crack the windows and let the
+            outside air do the cooling.
+          selector:
+            template:
+        close_title_template:
+          name: Close Notification Title
+          description: Shown on the phone notification when windows should be closed. Supports templates.
+          default: "🪟 Windows: seal the house"
+          selector:
+            template:
+        close_message_template:
+          name: Close Notification Message
+          description: >
+            Shown on the phone and spoken by Alexa when windows should be
+            closed. Supports templates — {{ outdoor_max }} and
+            {{ indoor_min }} are available (°C, already rounded).
+          default: >-
+            Outdoor peak is {{ outdoor_max }}°C, above your coolest indoor
+            reading of {{ indoor_min }}°C. Shut the windows so the heat
+            stays out.
+          selector:
+            template:
     timing:
       name: Timing
       icon: mdi:timer-outline
@@ -260,11 +296,14 @@ actions:
   - condition: template
     value_template: "{{ decision | trim != states(last_decision_helper) }}"
   - variables:
+      open_title_rendered: !input open_title_template
+      open_message_rendered: !input open_message_template
+      close_title_rendered: !input close_title_template
+      close_message_rendered: !input close_message_template
+  - variables:
       device_ids: "{{ notify_devices_list | select('string') | unique | list }}"
-      notification_title: >
-        {% if decision | trim == 'open' %}🪟 Windows: open them up{% else %}🪟 Windows: seal the house{% endif %}
-      notification_message: >
-        {% if decision | trim == 'open' %}Outdoor peak is {{ outdoor_max }}°C, below your coolest indoor reading of {{ indoor_min }}°C. Crack the windows and let the outside air do the cooling.{% else %}Outdoor peak is {{ outdoor_max }}°C, above your coolest indoor reading of {{ indoor_min }}°C. Shut the windows so the heat stays out.{% endif %}
+      notification_title: "{{ open_title_rendered if decision | trim == 'open' else close_title_rendered }}"
+      notification_message: "{{ open_message_rendered if decision | trim == 'open' else close_message_rendered }}"
   - repeat:
       for_each: "{{ device_ids }}"
       sequence:
