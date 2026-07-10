@@ -3,7 +3,7 @@ blueprint:
   description: >
     # 🌡️ Window Advisor
 
-    **Version: 1.1.0**
+    **Version: 1.1.1**
 
 
     Compares your indoor and outdoor temperature sensors and sends a mobile
@@ -36,11 +36,10 @@ blueprint:
 
       - **Alexa Announcement (optional):** Also speaks the recommendation on
         selected Echo devices, using the same duplicate guard so it stays in
-        sync with the phone notification. Requires the
-        [Alexa Media Player](https://github.com/alandtse/alexa_media_player)
-        custom integration (HACS) — the official Home Assistant Alexa
-        integration only exposes entities *to* Alexa for voice control and
-        cannot push announcements *to* Echo devices.
+        sync with the phone notification. Requires the built-in
+        [Alexa Devices](https://www.home-assistant.io/integrations/alexa_devices/)
+        integration, which exposes an "Announce" notify entity per Echo
+        device (e.g. `notify.echo_dot_kitchen_announce`).
 
     </details>
 
@@ -151,23 +150,24 @@ blueprint:
         enable_alexa_announce:
           name: Enable Alexa Announcement
           description: >
-            Also announce the recommendation on the selected Echo devices
-            below. Requires the Alexa Media Player custom integration
-            (HACS) — the official Alexa integration cannot do this.
+            Also announce the recommendation via the selected Alexa notify
+            entities below.
           default: false
           selector:
             boolean:
-        alexa_media_players:
-          name: Echo Devices to Announce On
+        alexa_notify_entities:
+          name: Alexa Notify Entities
           description: >
-            Media player entities exposed by the Alexa Media Player
-            integration. Ignored if Enable Alexa Announcement is off.
+            One or more "Announce" (or "Speak") notify entities exposed by
+            the Alexa Devices integration, e.g.
+            notify.echo_dot_kitchen_announce. Ignored if Enable Alexa
+            Announcement is off.
           default: []
           selector:
             entity:
               multiple: true
               filter:
-                domain: media_player
+                domain: notify
 
 mode: single
 max_exceeded: silent
@@ -213,7 +213,7 @@ actions:
       notify_devices_raw: !input notify_devices
       last_decision_helper: !input last_decision_helper
       alexa_announce_enabled: !input enable_alexa_announce
-      alexa_media_players: !input alexa_media_players
+      alexa_notify_entities: !input alexa_notify_entities
   - condition: template
     value_template: "{{ not (trigger.id == 'periodic_check' and not periodic_recheck_enabled) }}"
   - variables:
@@ -255,14 +255,13 @@ actions:
             message: "{{ notification_message }}"
   - if:
       - condition: template
-        value_template: "{{ alexa_announce_enabled and alexa_media_players | count > 0 }}"
+        value_template: "{{ alexa_announce_enabled and alexa_notify_entities | count > 0 }}"
     then:
-      - action: notify.alexa_media
+      - action: notify.send_message
+        target:
+          entity_id: "{{ alexa_notify_entities }}"
         data:
-          target: "{{ alexa_media_players }}"
           message: "{{ notification_message }}"
-          data:
-            type: announce
   - action: input_text.set_value
     target:
       entity_id: "{{ last_decision_helper }}"
