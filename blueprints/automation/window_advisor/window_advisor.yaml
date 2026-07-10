@@ -208,9 +208,9 @@ actions:
   - variables:
       device_ids: "{{ notify_devices_list | select('string') | unique | list }}"
       notification_title: >
-        {% if decision | trim == 'open' %}🪟 Open the windows!{% else %}🪟 Close the windows!{% endif %}
+        {% if decision | trim == 'open' %}🪟 Windows: open them up{% else %}🪟 Windows: seal the house{% endif %}
       notification_message: >
-        {% if decision | trim == 'open' %}It's cooler outside (max {{ outdoor_max }}°C) than inside (min {{ indoor_min }}°C). Time to ventilate!{% else %}It's warmer outside (max {{ outdoor_max }}°C) than inside (min {{ indoor_min }}°C). Close up to keep the cool air in!{% endif %}
+        {% if decision | trim == 'open' %}Outdoor peak is {{ outdoor_max }}°C, below your coolest indoor reading of {{ indoor_min }}°C. Crack the windows and let the outside air do the cooling.{% else %}Outdoor peak is {{ outdoor_max }}°C, above your coolest indoor reading of {{ indoor_min }}°C. Shut the windows so the heat stays out.{% endif %}
   - repeat:
       for_each: "{{ device_ids }}"
       sequence:
